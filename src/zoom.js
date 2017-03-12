@@ -1,6 +1,10 @@
 /**
  * Pure JavaScript implementation of zoom.js.
  *
+ * This fork extends the zoom.js script to work on divs as well.
+ * The divs can also have hidden text that will transition into view.
+ * Available at: https://github.com/alexbonine/zoom.js
+ *
  * Original preamble:
  * zoom.js - It's the best way to zoom an image
  * @version v0.0.2
@@ -16,9 +20,11 @@
  *
  * Copyright (c) 2013 @fat
  * The MIT License. Copyright © 2016 Nishanth Shanmugham.
+ * The MIT License. Copyright © 2017 Alex Bonine.
  */
 
 import { ZoomImage } from "./zoom-image.js";
+import { ZoomDiv } from "./zoom-div.js";
 import { windowWidth, windowHeight } from "./utils.js";
 
 var current = null;
@@ -46,7 +52,14 @@ var prepareZoom = e => {
 
     closeCurrent(true);
 
-    current = new ZoomImage(e.target, offset);
+    if (e.currentTarget.tagName === 'IMG') {
+      current = new ZoomImage(e.currentTarget, offset);
+    } else if (e.currentTarget.tagName === 'DIV') {
+      current = new ZoomDiv(e.currentTarget, offset);
+    } else {
+      return;
+    }
+
     current.zoom();
 
     addCloseListeners();

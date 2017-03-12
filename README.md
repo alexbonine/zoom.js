@@ -7,11 +7,13 @@ A pure JavaScript image zooming plugin; as seen on
 
 Has no jQuery or Bootstrap dependencies.
 
-This is a port of the original version by @fat: <https://github.com/fat/zoom.js>.
+This is a port of the original version by @fat: <https://github.com/fat/zoom.js> and a fork by @nishanths: <https://github.com/nishanths/zoom.js>.
+
+It adds the ability to zoom in on div elements as well as to show more text when the div is zoomed in.
 
 ## Usage
 
-You can use zoom.js directly as a script, or install via [npm](https://www.npmjs.com/package/@nishanths/zoom.js). 
+You can use zoom.js directly as a script, or install via [npm](https://www.npmjs.com/package/@alexbonine/zoom.js). 
 
 ### Direct
 
@@ -31,7 +33,7 @@ You can use zoom.js directly as a script, or install via [npm](https://www.npmjs
 
 ### Via npm
 
-1. Install the package: `npm i @nishanths/zoom.js`
+1. Install the package: `npm i @alexbonine/zoom.js`
 1. Link the zoom.css file to your application.
 
   ```html
@@ -42,7 +44,7 @@ You can use zoom.js directly as a script, or install via [npm](https://www.npmjs
    make zoomable. 
 
   ```js
-  import { zoom } from "@nishanths/zoom.js";
+  import { zoom } from "@alexbonine/zoom.js";
 
   var imgElem = new Image();
   imgElem.src = "tree.png";
@@ -53,7 +55,7 @@ You can use zoom.js directly as a script, or install via [npm](https://www.npmjs
 
 ## Demo
 
-<https://nishanths.github.io/zoom.js>
+<https://alexbonine.github.io/zoom.js>
 
 ![gif](https://i.imgur.com/gj3foRU.gif)
 
@@ -72,9 +74,9 @@ It has the same behavior and all the features from the original implementation. 
 
 [Original license](https://raw.githubusercontent.com/fat/zoom.js/master/MIT-LICENSE.txt)
 
-This is a fork of the original zoom.js implementation by @fat.
-Copyrights for the original project are held by @fat. All other copyright
-for changes in the fork are held by Nishanth Shanmugham.
+This is a fork of Nishanth Shanmugham which itself was a fork of the original zoom.js implementation by @fat.
+Copyrights for the original projects are held by Nishanth Shanmugham and @fat. All other copyright for changes in the fork are held by Alex Bonine.
 
 Copyright (c) 2013 @fat
 The MIT License. Copyright © 2016 Nishanth Shanmugham.
+The MIT License. Copyright © 2017 Alex Bonine.

@@ -1,13 +1,15 @@
 var windowWidth = () => document.documentElement.clientWidth;
 var windowHeight = () => document.documentElement.clientHeight;
 
-var elemOffset = elem => {
+/* Added transitioning height for div that has invisible height/width. rect was
+ * getting the original size and not taking into account the new invisibles divs. */
+var elemOffset = (elem, transitioningHeight = 0, transitioningWidth = 0) => {
     var rect = elem.getBoundingClientRect();
     var docElem = document.documentElement;
     var win = window;
     return {
-        top: rect.top + win.pageYOffset - docElem.clientTop,
-        left: rect.left + win.pageXOffset - docElem.clientLeft
+        top: rect.top + win.pageYOffset - docElem.clientTop - transitioningHeight,
+        left: rect.left + win.pageXOffset - docElem.clientLeft - transitioningWidth
     };
 };
 

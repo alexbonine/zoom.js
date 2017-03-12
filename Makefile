@@ -8,11 +8,18 @@ define PREAMBLE
 /**
  * Pure JavaScript implementation of zoom.js.
  *
+ * This fork extends the zoom.js script to work on divs as well.
+ * The divs can also have hidden text that will transition into view.
+ * Available at: https://github.com/alexbonine/zoom.js
+ *
  * Original preamble:
  * zoom.js - It's the best way to zoom an image
  * @version v0.0.2
  * @link https://github.com/fat/zoom.js
  * @license MIT
+ *
+ * Needs a related CSS file to work. See the README at
+ * https://github.com/nishanths/zoom.js for more info.
  *
  * This is a fork of the original zoom.js implementation by @fat.
  * Copyrights for the original project are held by @fat. All other copyright
@@ -20,6 +27,7 @@ define PREAMBLE
  *
  * Copyright (c) 2013 @fat
  * The MIT License. Copyright © 2016 Nishanth Shanmugham.
+ * The MIT License. Copyright © 2017 Alex Bonine.
  */
 endef
 
