@@ -1,23 +1,28 @@
 import { elemOffset, once, windowWidth, windowHeight } from "./utils.js";
 
+/* MinusPadding versions used for setting size of div; others for transform/centering */
 class Size {
     constructor(div, invisibles) {
+        const styles = window.getComputedStyle(div);
         this.originalHeight = div.clientHeight;
+        this.originalHeightMinusPadding = this.originalHeight - parseInt(styles.paddingTop, 10) - parseInt(styles.paddingBottom, 10);
         this.invisiblesHeight = this.getInvisiblesHeight(invisibles);
-        this.height = this.originalHeight + this.invisiblesHeight;
+        this.newHeight = this.originalHeight + this.invisiblesHeight;
+        this.newHeightMinusPadding = this.originalHeightMinusPadding + this.invisiblesHeight;
 
         this.originalWidth = div.clientWidth;
-        this.width = Math.ceil(this.originalWidth, this.getInvisiblesWidth(invisibles));
-        this.invisiblesWidth = this.width - this.originalWidth;
+        this.originalWidthMinusPadding = this.originalWidth - parseInt(styles.paddingLeft, 10) - parseInt(styles.paddingRight, 10);
+        // this.width = Math.ceil(this.originalWidth, this.getInvisiblesWidth(invisibles));
+        // this.invisiblesWidth = this.width - this.originalWidth;
     }
 
-    getInvisiblesWidth(invisibles) {
-        let width = 0;
-        for (let i = 0; i < invisibles.length; i++) {
-            width += invisibles[i].clientWidth;
-        }
-        return width;
-    }
+    // getInvisiblesWidth(invisibles) {
+    //     let width = 0;
+    //     for (let i = 0; i < invisibles.length; i++) {
+    //         width += invisibles[i].clientWidth;
+    //     }
+    //     return width;
+    // }
 
     getInvisiblesHeight(invisibles) {
         let height = 0;
@@ -60,8 +65,8 @@ export class ZoomDiv {
         this.overlay.classList.add("zoom-overlay");
         document.body.appendChild(this.overlay);
 
-        this.div.style.height = `${this.divSize.originalHeight}px`;
-        this.div.style.width = `${this.divSize.originalWidth}px`;
+        this.div.style.height = `${this.divSize.originalHeightMinusPadding}px`;
+        this.div.style.width = `${this.divSize.originalWidthMinusPadding}px`;
         this.forceRepaint();
         var scale = this.calculateScale(this.divSize);
         this.forceRepaint();
@@ -73,8 +78,8 @@ export class ZoomDiv {
     }
 
     showInvisibles () {
-        this.div.style.height = `${this.divSize.height}px`;
-        this.div.style.width = `${this.divSize.width}px`;
+        this.div.style.height = `${this.divSize.newHeightMinusPadding}px`;
+        this.div.style.width = `${this.divSize.originalWidthMinusPadding}px`;
         for (let i = 0; i < this.invisibles.length; i++) {
             this.invisibles[i].style.position = 'relative';
             this.invisibles[i].style.visibility = 'visible';
@@ -83,8 +88,8 @@ export class ZoomDiv {
     }
 
     hideInvisibles () {
-        this.div.style.height = `${this.divSize.originalHeight}px`;
-        this.div.style.width = `${this.divSize.originalWidth}px`;
+        this.div.style.height = `${this.divSize.originalHeightMinusPadding}px`;
+        this.div.style.width = `${this.divSize.originalWidthMinusPadding}px`;
         for (let i = 0; i < this.invisibles.length; i++) {
             this.invisibles[i].removeAttribute("style");
         }
@@ -96,27 +101,27 @@ export class ZoomDiv {
 
         var viewportWidth = (windowWidth() - this.offset);
         var viewportHeight = (windowHeight() - this.offset);
-        var imageAspectRatio = size.width / size.height;
+        var imageAspectRatio = size.originalWidth / size.newHeight;
         var viewportAspectRatio = viewportWidth / viewportHeight;
 
-        if (size.width < viewportWidth && size.height < viewportHeight) {
+        if (size.originalWidth < viewportWidth && size.newHeight < viewportHeight) { // would be newWidth if resize width too
             return maxScaleFactor;
         } else if (imageAspectRatio < viewportAspectRatio) {
-            return (viewportHeight / size.height) * maxScaleFactor;
+            return (viewportHeight / size.newHeight) * maxScaleFactor;
         } else {
-            return (viewportWidth / size.width) * maxScaleFactor;
+            return (viewportWidth / size.originalWidth) * maxScaleFactor;
         }
     }
 
     animate(scale) {
-        var elementOffset = elemOffset(this.div, this.divSize.invisiblesHeight, this.divSize.invisiblesWidth);
+        var elementOffset = elemOffset(this.div);
         var scrollTop = window.pageYOffset;
 
         var viewportX = (windowWidth() / 2);
         var viewportY = scrollTop + (windowHeight() / 2);
 
-        var imageCenterX = elementOffset.left + (this.divSize.width / 2);
-        var imageCenterY = elementOffset.top + (this.divSize.height / 2);
+        var imageCenterX = elementOffset.left + (this.divSize.originalWidth / 2);
+        var imageCenterY = elementOffset.top + (this.divSize.newHeight / 2);
 
         var tx = viewportX - imageCenterX;
         var ty = viewportY - imageCenterY;

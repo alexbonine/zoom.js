@@ -100,6 +100,12 @@
         __webpack_require__.d(exports, "d", function() {
             return once;
         });
+        __webpack_require__.d(exports, "e", function() {
+            return srcsetMaxWidth;
+        });
+        __webpack_require__.d(exports, "f", function() {
+            return srcsetFixSizes;
+        });
         var windowWidth = function windowWidth() {
             return document.documentElement.clientWidth;
         };
@@ -108,13 +114,12 @@
         };
         var elemOffset = function elemOffset(elem) {
             var transitioningHeight = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-            var transitioningWidth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
             var rect = elem.getBoundingClientRect();
             var docElem = document.documentElement;
             var win = window;
             return {
-                top: rect.top + win.pageYOffset - docElem.clientTop - transitioningHeight,
-                left: rect.left + win.pageXOffset - docElem.clientLeft - transitioningWidth
+                top: rect.top + win.pageYOffset - docElem.clientTop,
+                left: rect.left + win.pageXOffset - docElem.clientLeft
             };
         };
         var once = function once(elem, type, handler) {
@@ -123,6 +128,26 @@
                 handler();
             };
             elem.addEventListener(type, fn);
+        };
+        var srcsetMaxWidth = function srcsetMaxWidth(elem) {
+            var srcsetValues = elem.getAttribute("srcset").replace(/\n/g, " ").split(", ");
+            var srcsetWidths = srcsetValues.map(function(value) {
+                var value = value.trim();
+                var width = value.split(" ")[1].trim();
+                if (width.charAt(width.length - 1) === "w") {
+                    return width.replace("w", "");
+                }
+                return 0;
+            });
+            return Math.max.apply(Math, srcsetWidths);
+        };
+        var srcsetFixSizes = function srcsetFixSizes(elems) {
+            for (var i = 0; i < elems.length; i++) {
+                var elem = elems[i];
+                if (elem.hasAttribute("srcset")) {
+                    elem.setAttribute("sizes", elem.width + "px");
+                }
+            }
         };
     }, function(module, exports, __webpack_require__) {
         "use strict";
@@ -228,23 +253,16 @@
         var Size = function() {
             function Size(div, invisibles) {
                 _classCallCheck(this, Size);
+                var styles = window.getComputedStyle(div);
                 this.originalHeight = div.clientHeight;
+                this.originalHeightMinusPadding = this.originalHeight - parseInt(styles.paddingTop, 10) - parseInt(styles.paddingBottom, 10);
                 this.invisiblesHeight = this.getInvisiblesHeight(invisibles);
-                this.height = this.originalHeight + this.invisiblesHeight;
+                this.newHeight = this.originalHeight + this.invisiblesHeight;
+                this.newHeightMinusPadding = this.originalHeightMinusPadding + this.invisiblesHeight;
                 this.originalWidth = div.clientWidth;
-                this.width = Math.ceil(this.originalWidth, this.getInvisiblesWidth(invisibles));
-                this.invisiblesWidth = this.width - this.originalWidth;
+                this.originalWidthMinusPadding = this.originalWidth - parseInt(styles.paddingLeft, 10) - parseInt(styles.paddingRight, 10);
             }
             _createClass(Size, [ {
-                key: "getInvisiblesWidth",
-                value: function getInvisiblesWidth(invisibles) {
-                    var width = 0;
-                    for (var i = 0; i < invisibles.length; i++) {
-                        width += invisibles[i].clientWidth;
-                    }
-                    return width;
-                }
-            }, {
                 key: "getInvisiblesHeight",
                 value: function getInvisiblesHeight(invisibles) {
                     var height = 0;
@@ -287,8 +305,8 @@
                     this.overlay = document.createElement("div");
                     this.overlay.classList.add("zoom-overlay");
                     document.body.appendChild(this.overlay);
-                    this.div.style.height = this.divSize.originalHeight + "px";
-                    this.div.style.width = this.divSize.originalWidth + "px";
+                    this.div.style.height = this.divSize.originalHeightMinusPadding + "px";
+                    this.div.style.width = this.divSize.originalWidthMinusPadding + "px";
                     this.forceRepaint();
                     var scale = this.calculateScale(this.divSize);
                     this.forceRepaint();
@@ -299,8 +317,8 @@
             }, {
                 key: "showInvisibles",
                 value: function showInvisibles() {
-                    this.div.style.height = this.divSize.height + "px";
-                    this.div.style.width = this.divSize.width + "px";
+                    this.div.style.height = this.divSize.newHeightMinusPadding + "px";
+                    this.div.style.width = this.divSize.originalWidthMinusPadding + "px";
                     for (var i = 0; i < this.invisibles.length; i++) {
                         this.invisibles[i].style.position = "relative";
                         this.invisibles[i].style.visibility = "visible";
@@ -310,8 +328,8 @@
             }, {
                 key: "hideInvisibles",
                 value: function hideInvisibles() {
-                    this.div.style.height = this.divSize.originalHeight + "px";
-                    this.div.style.width = this.divSize.originalWidth + "px";
+                    this.div.style.height = this.divSize.originalHeightMinusPadding + "px";
+                    this.div.style.width = this.divSize.originalWidthMinusPadding + "px";
                     for (var i = 0; i < this.invisibles.length; i++) {
                         this.invisibles[i].removeAttribute("style");
                     }
@@ -323,25 +341,25 @@
                     var maxScaleFactor = 1;
                     var viewportWidth = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["a"])() - this.offset;
                     var viewportHeight = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["b"])() - this.offset;
-                    var imageAspectRatio = size.width / size.height;
+                    var imageAspectRatio = size.originalWidth / size.newHeight;
                     var viewportAspectRatio = viewportWidth / viewportHeight;
-                    if (size.width < viewportWidth && size.height < viewportHeight) {
+                    if (size.originalWidth < viewportWidth && size.newHeight < viewportHeight) {
                         return maxScaleFactor;
                     } else if (imageAspectRatio < viewportAspectRatio) {
-                        return viewportHeight / size.height * maxScaleFactor;
+                        return viewportHeight / size.newHeight * maxScaleFactor;
                     } else {
-                        return viewportWidth / size.width * maxScaleFactor;
+                        return viewportWidth / size.originalWidth * maxScaleFactor;
                     }
                 }
             }, {
                 key: "animate",
                 value: function animate(scale) {
-                    var elementOffset = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["c"])(this.div, this.divSize.invisiblesHeight, this.divSize.invisiblesWidth);
+                    var elementOffset = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["c"])(this.div, this.divSize.invisiblesHeight);
                     var scrollTop = window.pageYOffset;
                     var viewportX = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["a"])() / 2;
                     var viewportY = scrollTop + __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["b"])() / 2;
-                    var imageCenterX = elementOffset.left + this.divSize.width / 2;
-                    var imageCenterY = elementOffset.top + this.divSize.height / 2;
+                    var imageCenterX = elementOffset.left + this.divSize.originalWidth / 2;
+                    var imageCenterY = elementOffset.top + this.divSize.newHeight / 2;
                     var tx = viewportX - imageCenterX;
                     var ty = viewportY - imageCenterY;
                     var tz = 0;
@@ -409,7 +427,9 @@
             }, {
                 key: "zoom",
                 value: function zoom() {
-                    var size = new Size(this.img.naturalWidth, this.img.naturalHeight);
+                    var _this2 = this;
+                    var naturalSize = new Size(this.img.naturalWidth, this.img.naturalHeight);
+                    var imgSize = new Size(this.img.width, this.img.height);
                     this.wrap = document.createElement("div");
                     this.wrap.classList.add("zoom-img-wrap");
                     this.img.parentNode.insertBefore(this.wrap, this.img);
@@ -420,18 +440,30 @@
                     this.overlay.classList.add("zoom-overlay");
                     document.body.appendChild(this.overlay);
                     this.forceRepaint();
-                    var scale = this.calculateScale(size);
+                    var scale = this.calculateScale(naturalSize);
                     this.forceRepaint();
-                    this.animate(scale);
+                    this.animate(scale, imgSize);
                     document.body.classList.add("zoom-overlay-open");
+                    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["d"])(this.img, "transitionend", function() {
+                        if (_this2.img.hasAttribute("srcset")) {
+                            _this2.img.setAttribute("sizes", Math.ceil(_this2.img.width * scale) + "px");
+                        }
+                    });
                 }
             }, {
                 key: "calculateScale",
                 value: function calculateScale(size) {
+                    var imageAspectRatio = size.w / size.h;
+                    if (this.img.hasAttribute("srcset")) {
+                        var srcSetMaxWidth = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["e"])(this.img);
+                        if (srcSetMaxWidth > 0) {
+                            size.w = srcSetMaxWidth * window.devicePixelRatio;
+                            size.h = size.w / imageAspectRatio;
+                        }
+                    }
                     var maxScaleFactor = size.w / this.img.width;
                     var viewportWidth = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["a"])() - this.offset;
                     var viewportHeight = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["b"])() - this.offset;
-                    var imageAspectRatio = size.w / size.h;
                     var viewportAspectRatio = viewportWidth / viewportHeight;
                     if (size.w < viewportWidth && size.h < viewportHeight) {
                         return maxScaleFactor;
@@ -443,13 +475,13 @@
                 }
             }, {
                 key: "animate",
-                value: function animate(scale) {
+                value: function animate(scale, size) {
                     var imageOffset = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["c"])(this.img);
                     var scrollTop = window.pageYOffset;
                     var viewportX = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["a"])() / 2;
                     var viewportY = scrollTop + __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["b"])() / 2;
-                    var imageCenterX = imageOffset.left + this.img.width / 2;
-                    var imageCenterY = imageOffset.top + this.img.height / 2;
+                    var imageCenterX = imageOffset.left + size.w / 2;
+                    var imageCenterY = imageOffset.top + size.h / 2;
                     var tx = viewportX - imageCenterX;
                     var ty = viewportY - imageCenterY;
                     var tz = 0;
@@ -474,15 +506,16 @@
             }, {
                 key: "close",
                 value: function close() {
-                    var _this2 = this;
+                    var _this3 = this;
                     document.body.classList.add("zoom-overlay-transitioning");
                     this.img.style.transform = this.preservedTransform;
                     if (this.img.style.length === 0) {
                         this.img.removeAttribute("style");
                     }
                     this.wrap.style.transform = "none";
+                    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["f"])([ this.img ]);
                     __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["d"])(this.img, "transitionend", function() {
-                        _this2.dispose();
+                        _this3.dispose();
                         document.body.classList.remove("zoom-overlay-open");
                     });
                 }
