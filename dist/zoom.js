@@ -113,7 +113,6 @@
             return document.documentElement.clientHeight;
         };
         var elemOffset = function elemOffset(elem) {
-            var transitioningHeight = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
             var rect = elem.getBoundingClientRect();
             var docElem = document.documentElement;
             var win = window;
@@ -251,23 +250,24 @@
         "use strict";
         var __WEBPACK_IMPORTED_MODULE_0__utils_js__ = __webpack_require__(0);
         var Size = function() {
-            function Size(div, invisibles) {
+            function Size(div, invisibles, recedes) {
                 _classCallCheck(this, Size);
                 var styles = window.getComputedStyle(div);
                 this.originalHeight = div.clientHeight;
                 this.originalHeightMinusPadding = this.originalHeight - parseInt(styles.paddingTop, 10) - parseInt(styles.paddingBottom, 10);
-                this.invisiblesHeight = this.getInvisiblesHeight(invisibles);
-                this.newHeight = this.originalHeight + this.invisiblesHeight;
-                this.newHeightMinusPadding = this.originalHeightMinusPadding + this.invisiblesHeight;
+                this.invisiblesHeight = this.getTotalHeight(invisibles);
+                this.recedesHeight = this.getTotalHeight(recedes);
+                this.newHeight = this.originalHeight + this.invisiblesHeight - this.recedesHeight;
+                this.newHeightMinusPadding = this.originalHeightMinusPadding + this.invisiblesHeight - this.recedesHeight;
                 this.originalWidth = div.clientWidth;
                 this.originalWidthMinusPadding = this.originalWidth - parseInt(styles.paddingLeft, 10) - parseInt(styles.paddingRight, 10);
             }
             _createClass(Size, [ {
-                key: "getInvisiblesHeight",
-                value: function getInvisiblesHeight(invisibles) {
+                key: "getTotalHeight",
+                value: function getTotalHeight(elements) {
                     var height = 0;
-                    for (var i = 0; i < invisibles.length; i++) {
-                        height += invisibles[i].clientHeight;
+                    for (var i = 0; i < elements.length; i++) {
+                        height += elements[i].clientHeight;
                     }
                     return height;
                 }
@@ -284,6 +284,7 @@
                 this.offset = offset;
                 this.divSize = null;
                 this.invisibles = null;
+                this.recedes = null;
             }
             _createClass(ZoomDiv, [ {
                 key: "forceRepaint",
@@ -295,7 +296,8 @@
                 key: "zoom",
                 value: function zoom() {
                     this.invisibles = this.div.getElementsByClassName("invisible");
-                    this.divSize = new Size(this.div, this.invisibles);
+                    this.recedes = this.div.getElementsByClassName("recede");
+                    this.divSize = new Size(this.div, this.invisibles, this.recedes);
                     this.wrap = document.createElement("div");
                     this.wrap.classList.add("zoom-div-wrap");
                     this.div.parentNode.insertBefore(this.wrap, this.div);
@@ -310,13 +312,13 @@
                     this.forceRepaint();
                     var scale = this.calculateScale(this.divSize);
                     this.forceRepaint();
-                    this.showInvisibles();
+                    this.showEnhancedDiv();
                     this.animate(scale);
                     document.body.classList.add("zoom-overlay-open");
                 }
             }, {
-                key: "showInvisibles",
-                value: function showInvisibles() {
+                key: "showEnhancedDiv",
+                value: function showEnhancedDiv() {
                     this.div.style.height = this.divSize.newHeightMinusPadding + "px";
                     this.div.style.width = this.divSize.originalWidthMinusPadding + "px";
                     for (var i = 0; i < this.invisibles.length; i++) {
@@ -324,16 +326,23 @@
                         this.invisibles[i].style.visibility = "visible";
                         this.invisibles[i].style.opacity = 1;
                     }
+                    for (var _i = 0; _i < this.recedes.length; _i++) {
+                        this.recedes[_i].style.position = "absolute";
+                        this.recedes[_i].style.visibility = "hidden";
+                        this.recedes[_i].style.opacity = 0;
+                    }
                 }
             }, {
-                key: "hideInvisibles",
-                value: function hideInvisibles() {
+                key: "returnToOriginalDiv",
+                value: function returnToOriginalDiv() {
                     this.div.style.height = this.divSize.originalHeightMinusPadding + "px";
                     this.div.style.width = this.divSize.originalWidthMinusPadding + "px";
                     for (var i = 0; i < this.invisibles.length; i++) {
                         this.invisibles[i].removeAttribute("style");
                     }
-                    this.div.removeAttribute("style");
+                    for (var _i2 = 0; _i2 < this.recedes.length; _i2++) {
+                        this.recedes[_i2].removeAttribute("style");
+                    }
                 }
             }, {
                 key: "calculateScale",
@@ -354,7 +363,7 @@
             }, {
                 key: "animate",
                 value: function animate(scale) {
-                    var elementOffset = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["c"])(this.div, this.divSize.invisiblesHeight);
+                    var elementOffset = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["c"])(this.div);
                     var scrollTop = window.pageYOffset;
                     var viewportX = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["a"])() / 2;
                     var viewportY = scrollTop + __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["b"])() / 2;
@@ -387,12 +396,14 @@
                     var _this = this;
                     document.body.classList.add("zoom-overlay-transitioning");
                     this.div.style.transform = this.preservedTransform;
-                    this.hideInvisibles();
-                    if (this.div.style.length === 0) {
-                        this.div.removeAttribute("style");
-                    }
+                    this.returnToOriginalDiv();
                     this.wrap.style.transform = "none";
                     __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__utils_js__["d"])(this.div, "transitionend", function() {
+                        _this.div.style.height = "";
+                        _this.div.style.width = "";
+                        if (_this.div.style.length === 0) {
+                            _this.div.removeAttribute("style");
+                        }
                         _this.dispose();
                         document.body.classList.remove("zoom-overlay-open");
                     });

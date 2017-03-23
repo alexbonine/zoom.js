@@ -2,13 +2,14 @@ import { elemOffset, once, windowWidth, windowHeight } from "./utils.js";
 
 /* MinusPadding versions used for setting size of div; others for transform/centering */
 class Size {
-    constructor(div, invisibles) {
+    constructor(div, invisibles, recedes) {
         const styles = window.getComputedStyle(div);
         this.originalHeight = div.clientHeight;
         this.originalHeightMinusPadding = this.originalHeight - parseInt(styles.paddingTop, 10) - parseInt(styles.paddingBottom, 10);
-        this.invisiblesHeight = this.getInvisiblesHeight(invisibles);
-        this.newHeight = this.originalHeight + this.invisiblesHeight;
-        this.newHeightMinusPadding = this.originalHeightMinusPadding + this.invisiblesHeight;
+        this.invisiblesHeight = this.getTotalHeight(invisibles);
+        this.recedesHeight = this.getTotalHeight(recedes);
+        this.newHeight = this.originalHeight + this.invisiblesHeight - this.recedesHeight;
+        this.newHeightMinusPadding = this.originalHeightMinusPadding + this.invisiblesHeight - this.recedesHeight;
 
         this.originalWidth = div.clientWidth;
         this.originalWidthMinusPadding = this.originalWidth - parseInt(styles.paddingLeft, 10) - parseInt(styles.paddingRight, 10);
@@ -24,10 +25,10 @@ class Size {
     //     return width;
     // }
 
-    getInvisiblesHeight(invisibles) {
+    getTotalHeight(elements) {
         let height = 0;
-        for (let i = 0; i < invisibles.length; i++) {
-            height += invisibles[i].clientHeight;
+        for (let i = 0; i < elements.length; i++) {
+            height += elements[i].clientHeight;
         }
         return height;
     }
@@ -42,6 +43,7 @@ export class ZoomDiv {
         this.offset = offset;
         this.divSize = null;
         this.invisibles = null;
+        this.recedes = null;
     }
 
     forceRepaint() {
@@ -51,7 +53,8 @@ export class ZoomDiv {
 
     zoom() {
         this.invisibles = this.div.getElementsByClassName('invisible');
-        this.divSize = new Size(this.div, this.invisibles);
+        this.recedes = this.div.getElementsByClassName('recede');
+        this.divSize = new Size(this.div, this.invisibles, this.recedes);
 
         this.wrap = document.createElement("div");
         this.wrap.classList.add("zoom-div-wrap");
@@ -71,13 +74,13 @@ export class ZoomDiv {
         var scale = this.calculateScale(this.divSize);
         this.forceRepaint();
 
-        this.showInvisibles();
+        this.showEnhancedDiv();
         this.animate(scale);
 
         document.body.classList.add("zoom-overlay-open");
     }
 
-    showInvisibles () {
+    showEnhancedDiv () {
         this.div.style.height = `${this.divSize.newHeightMinusPadding}px`;
         this.div.style.width = `${this.divSize.originalWidthMinusPadding}px`;
         for (let i = 0; i < this.invisibles.length; i++) {
@@ -85,15 +88,22 @@ export class ZoomDiv {
             this.invisibles[i].style.visibility = 'visible';
             this.invisibles[i].style.opacity = 1;
         }
+        for (let i = 0; i < this.recedes.length; i++) {
+            this.recedes[i].style.position = 'absolute';
+            this.recedes[i].style.visibility = 'hidden';
+            this.recedes[i].style.opacity = 0;
+        }
     }
 
-    hideInvisibles () {
+    returnToOriginalDiv () {
         this.div.style.height = `${this.divSize.originalHeightMinusPadding}px`;
         this.div.style.width = `${this.divSize.originalWidthMinusPadding}px`;
         for (let i = 0; i < this.invisibles.length; i++) {
             this.invisibles[i].removeAttribute("style");
         }
-        this.div.removeAttribute("style");
+        for (let i = 0; i < this.recedes.length; i++) {
+            this.recedes[i].removeAttribute("style");
+        }
     }
 
     calculateScale(size) {
@@ -150,13 +160,15 @@ export class ZoomDiv {
     close() {
         document.body.classList.add("zoom-overlay-transitioning");
         this.div.style.transform = this.preservedTransform;
-        this.hideInvisibles();
-        if (this.div.style.length === 0) {
-            this.div.removeAttribute("style");
-        }
+        this.returnToOriginalDiv();
         this.wrap.style.transform = "none";
 
         once(this.div, "transitionend", () => {
+            this.div.style.height = '';
+            this.div.style.width = '';
+            if (this.div.style.length === 0) {
+                this.div.removeAttribute("style");
+            }
             this.dispose();
             // XXX(nishanths): remove class should happen after dispose. Otherwise,
             // a new click event could fire and create a duplicate ZoomImage for
